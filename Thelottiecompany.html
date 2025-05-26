@@ -1,0 +1,1033 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+
+<style>
+.lottie-editor-wrapper {
+    position: relative; /* For positioning the replace button */
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: sans-serif;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.replace-lottie-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 100;
+    font-size: 0.9rem;
+}
+.replace-lottie-btn:hover {
+    background-color: #0056b3;
+}
+.replace-lottie-btn.hidden {
+    display: none;
+}
+
+.lottie-placeholder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 2rem;
+    text-align: center;
+    background-color: rgba(240, 240, 240, 0.7);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.lottie-placeholder.dragover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+.lottie-placeholder h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #555;
+}
+.browse-btn-styled {
+    margin-top:0.8rem;
+    padding:10px 20px;
+    border:2px solid #00008b;
+    border-radius:8px;
+    background:#fff;
+    color:#00008b;
+    text-decoration:none;
+    font-weight:bold;
+    display: inline-block;
+}
+.browse-btn-styled:hover {
+    background:#f0f0f0;
+}
+.lottie-placeholder .disclaimer {
+    font-size:0.85rem;
+    color:#666;
+    margin-top:1.5rem;
+}
+
+/* Style for disabled controls */
+.controls-disabled .play-btn,
+.controls-disabled .speed-select,
+.controls-disabled .full-btn,
+.controls-disabled .zoom-btn,
+.controls-disabled .frame-slider,
+.controls-disabled .download-btn,
+.controls-disabled .export-row button {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+.controls-disabled .color-panel { /* Target the panel itself for opacity */
+    opacity: 0.6;
+}
+.controls-disabled .color-grid { /* Prevent clicks on color grid items */
+    pointer-events: none;
+}
+.controls-disabled .bg-panel {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+
+.hidden {
+    display: none !important;
+}
+.zoom-btn {
+    color: black;
+    background: none;
+    border: 1px solid black;
+    font-size: 16px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.zoom-btn:hover {
+    background: black;
+    color: white;
+}
+.main-row {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    width: 100%;
+}
+.lottie-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    overflow: hidden;
+}
+#lottiePreview {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 100%;
+    height: 100%;
+}
+.color-panel {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fafafa;
+    padding: 1rem;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+}
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 10px;
+}
+.color-row {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 6px;
+    gap: 8px;
+    position: relative;
+}
+.color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #ccc;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.color-hex-label {
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-left: auto;
+}
+.no-colors-found {
+    font-style: italic;
+    color: #666;
+    padding: 1rem;
+    text-align: center;
+}
+.color-picker-input {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    opacity: 0;
+    pointer-events: none;
+}
+.bottom-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+.player-controls {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.play-btn, .speed-select, .full-btn, .zoom-label {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.frames-info {
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+    margin-right: 1rem;
+    min-width: 120px; /* Adjusted for "No Lottie Loaded" */
+}
+.frame-slider {
+    width: 150px;
+}
+.bg-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+.bg-label {
+    font-weight: bold;
+}
+.bg-swatches {
+    display: flex;
+    gap: 6px;
+}
+.swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #ccc;
+}
+.custom-bg-color {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.download-btn {
+    padding: 8px 16px;
+    background: #00008b;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.download-btn:hover {
+    background: #000066;
+}
+.zoom-label {
+    min-width: 50px;
+    text-align: center;
+}
+.export-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.export-row button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #eee;
+    cursor: pointer;
+    color: black;
+}
+.export-row button:hover {
+    background: #ddd;
+}
+.progress-bar {
+    height: 10px;
+    width: 150px;
+    background: #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    display: none;
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #007bff;
+    transition: width 0.1s linear;
+}
+.checker-pattern {
+    background-color: #ccc;
+    background-image:
+      linear-gradient(45deg, #e0e0e0 25%, transparent 25%, transparent 75%, #e0e0e0 75%, #e0e0e0),
+      linear-gradient(45deg, #e0e0e0 25%, transparent 25%, transparent 75%, #e0e0e0 75%, #e0e0e0);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+}
+@media(max-width: 768px) {
+    .main-row {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+    .color-panel {
+        width: 100%;
+        max-height: 300px;
+    }
+    .bottom-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .player-controls {
+        justify-content: center;
+    }
+    .replace-lottie-btn {
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    .frames-info {
+        min-width: 100px;
+        text-align: center; /* Center on mobile when stacked */
+        margin-bottom: 0.5rem; /* Add some space when stacked */
+    }
+}
+.server-counter-wrapper {
+    margin: 1rem auto;
+    text-align: center;
+    font-size: 1rem;
+}
+</style>
+
+<div class="lottie-editor-wrapper" id="lottieEditorWrapper">
+    <button id="replaceLottieBtn" class="replace-lottie-btn hidden">Load New Lottie</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none;">
+
+    <div class="main-row">
+        <div class="lottie-container" id="lottieContainer">
+            <div id="lottiePlaceholder" class="lottie-placeholder">
+                <h3>Drag &amp; Drop your Lottie JSON file here.</h3>
+                <a href="#" id="browseInsideBtn" class="browse-btn-styled">Browse File</a>
+                <div class="disclaimer">
+                    File(s) you drag and drop here are only accessible to you.<br>We don't store any of your files.
+                </div>
+            </div>
+            <div id="lottiePreview"></div>
+        </div>
+
+        <div class="color-panel" id="colorPanelContainer">
+            <h4 style="margin-top:0;">Edit Lottie Colors</h4>
+            <div id="colorGrid" class="color-grid">
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-row" id="bottomControlsRow">
+        <div class="player-controls">
+            <button class="play-btn" id="playBtn">⏸️</button>
+            <span class="frames-info" id="framesInfo"># 0 / 0</span>
+            <input type="range" min="0" max="100" step="1" value="0" class="frame-slider" id="frameSlider">
+            <select class="speed-select" id="speedSelect">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value.="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+            <button class="full-btn" id="fullBtn">🔲</button>
+            <button class="zoom-btn" id="zoomOutBtn">-</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button class="zoom-btn" id="zoomInBtn">+</button>
+        </div>
+        <div class="bg-panel">
+            <span class="bg-label">Background color</span>
+            <div class="bg-swatches" id="bgSwatches"></div>
+            <div class="custom-bg-color">
+                <input type="color" id="customBgPicker" value="#ffffff">
+                <button id="applyBgBtn">✔</button>
+            </div>
+        </div>
+        <button class="download-btn" id="downloadJsonBtn">Download JSON</button>
+    </div>
+
+    <div class="export-row" id="exportControlsRow">
+        <span>Coming soon features</span>
+        <button id="exportMp4Btn" disabled>Export MP4 (WebM)</button>
+        <button id="exportGifBtn" disabled>Export GIF</button>
+        <button id="exportGifTransBtn" disabled>Export Transparent GIF</button>
+        <div class="progress-bar" id="exportProgressBar">
+            <div class="progress-fill" id="exportProgressFill"></div>
+        </div>
+    </div>
+</div>
+
+<div class="server-counter-wrapper">
+    <span>Lotties previewed so far: </span>
+    <strong id="serverPreviewCounter">[lotties_preview_count]</strong>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Get references to DOM elements
+    const lottieEditorWrapper = document.getElementById('lottieEditorWrapper');
+    const lottieContainer     = document.getElementById('lottieContainer');
+    const lottiePlaceholder   = document.getElementById('lottiePlaceholder');
+    const lottiePreview       = document.getElementById('lottiePreview');
+    
+    const fileInput           = document.getElementById('fileInput'); // Crucial: Get the file input
+    const browseInsideBtn     = document.getElementById('browseInsideBtn');
+    const replaceLottieBtn    = document.getElementById('replaceLottieBtn');
+
+    const colorPanelContainer = document.getElementById('colorPanelContainer');
+    const colorGrid           = document.getElementById('colorGrid');
+    const playBtn             = document.getElementById('playBtn');
+    const framesInfo          = document.getElementById('framesInfo');
+    const frameSlider         = document.getElementById('frameSlider');
+    const speedSelect         = document.getElementById('speedSelect');
+    const fullBtn             = document.getElementById('fullBtn');
+    const zoomOutBtn          = document.getElementById('zoomOutBtn');
+    const zoomInBtn           = document.getElementById('zoomInBtn');
+    const zoomLabel           = document.getElementById('zoomLabel');
+    const bgSwatches          = document.getElementById('bgSwatches');
+    const customBgPicker      = document.getElementById('customBgPicker');
+    const applyBgBtn          = document.getElementById('applyBgBtn');
+    const downloadJsonBtn     = document.getElementById('downloadJsonBtn');
+    const exportMp4Btn        = document.getElementById('exportMp4Btn');
+    const exportGifBtn        = document.getElementById('exportGifBtn');
+    const exportGifTransBtn   = document.getElementById('exportGifTransBtn');
+    const exportProgressBar   = document.getElementById('exportProgressBar');
+    const exportProgressFill  = document.getElementById('exportProgressFill');
+    const serverPreviewCounter= document.getElementById('serverPreviewCounter');
+
+    let lottieData   = null;
+    let lottiePlayer = null;
+    let totalFramesForSlider = 0; 
+    let animationFrameCount = 0; 
+    let zoomFactor   = 1;
+    let isPlaying    = true; 
+
+    // CRITICAL CHECK for fileInput: If this isn't found, file loading cannot work.
+    if (!fileInput) {
+        console.error('Lottie Editor Error: The crucial <input type="file" id="fileInput"> element was not found in the HTML. File Browse will not function.');
+        if(lottiePlaceholder) lottiePlaceholder.innerHTML = "<h3>Error: File input system failed to load.</h3><p>Please check the page setup.</p>";
+        if(browseInsideBtn) browseInsideBtn.style.pointerEvents = 'none'; // Disable click
+        if(replaceLottieBtn) replaceLottieBtn.style.pointerEvents = 'none';
+        return; // Stop script execution if file input is missing
+    }
+
+    function initializeEditorState() {
+        if(lottiePlaceholder) lottiePlaceholder.classList.remove('hidden');
+        if(lottiePreview) {
+            lottiePreview.innerHTML = ''; 
+            lottiePreview.style.display = 'none'; // MODIFIED: Hide preview div
+        }
+        if(replaceLottieBtn) replaceLottieBtn.classList.add('hidden');
+        if(lottieEditorWrapper) lottieEditorWrapper.classList.add('controls-disabled');
+        
+        if(colorGrid) colorGrid.innerHTML = '<div class="no-colors-found">Load a Lottie JSON to see and edit colors.</div>';
+        if(framesInfo) framesInfo.textContent = 'No Lottie Loaded';
+        if(zoomLabel) zoomLabel.textContent = '100%';
+        
+        if (lottiePlayer) {
+            lottiePlayer.destroy();
+            lottiePlayer = null;
+        }
+        lottieData = null;
+        totalFramesForSlider = 0;
+        animationFrameCount = 0;
+        zoomFactor = 1;
+        isPlaying = true;
+        if(frameSlider) {
+            frameSlider.value = 0;
+            frameSlider.max = 0;
+        }
+        updateZoom();
+    }
+
+    function activateEditorState() {
+        if(lottiePlaceholder) lottiePlaceholder.classList.add('hidden');
+        if(lottiePreview) lottiePreview.style.display = 'block'; // MODIFIED: Show preview div
+        if(replaceLottieBtn) replaceLottieBtn.classList.remove('hidden');
+        if(lottieEditorWrapper) lottieEditorWrapper.classList.remove('controls-disabled');
+    }
+
+    refreshServerCount();
+
+    const presetBG = ['#FFFFFF','#606060','#FF9100','#111111','#FF0000','#00FF00','#0000FF','#FFFF00'];
+    presetBG.forEach(c => {
+        const s = document.createElement('div');
+        s.className = 'swatch';
+        s.style.backgroundColor = c;
+        s.title = c;
+        s.addEventListener('click', () => {
+            if (lottieContainer) {
+                lottieContainer.style.background = c;
+                lottieContainer.style.backgroundImage = 'none';
+            }
+        });
+        if (bgSwatches) bgSwatches.appendChild(s);
+    });
+    const checkerSw = document.createElement('div');
+    checkerSw.className='swatch checker-pattern';
+    checkerSw.title='Transparency Grid';
+    checkerSw.addEventListener('click',()=>{
+        if (lottieContainer) {
+            lottieContainer.style.backgroundColor='#fff';
+            lottieContainer.style.backgroundImage = window.getComputedStyle(checkerSw).backgroundImage;
+        }
+    });
+    if (bgSwatches) bgSwatches.appendChild(checkerSw);
+
+    if (applyBgBtn) {
+        applyBgBtn.addEventListener('click',()=>{
+            if (lottieContainer && customBgPicker) {
+                lottieContainer.style.background = customBgPicker.value;
+                lottieContainer.style.backgroundImage = 'none';
+            }
+        });
+    }
+    
+    function handleFileSelect(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (lottiePlaceholder) lottiePlaceholder.classList.remove('dragover');
+
+        const file = event.target.files ? event.target.files[0] : (event.dataTransfer ? event.dataTransfer.files[0] : null);
+        if (file) {
+            loadFile(file);
+        }
+        if (fileInput) fileInput.value = null;
+    }
+
+    if (lottieContainer) {
+        ['dragenter','dragover'].forEach(evtName => {
+            lottieContainer.addEventListener(evtName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (lottiePlaceholder && !lottiePlaceholder.classList.contains('hidden')) {
+                     lottiePlaceholder.classList.add('dragover');
+                }
+            }, false);
+        });
+        ['dragleave','drop'].forEach(evtName => {
+            lottieContainer.addEventListener(evtName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (lottiePlaceholder) lottiePlaceholder.classList.remove('dragover');
+            }, false);
+        });
+        lottieContainer.addEventListener('drop', handleFileSelect);
+    }
+
+    // Setup for "Browse Inside" button
+    if (browseInsideBtn) {
+        browseInsideBtn.addEventListener('click', e => {
+            e.preventDefault();
+            fileInput.click(); // fileInput is guaranteed to exist due to the check at the top
+        });
+    } else {
+        // console.warn("Lottie Editor: browseInsideBtn element not found in HTML.");
+    }
+
+    // Setup for "Replace Lottie" button
+    if (replaceLottieBtn) {
+        replaceLottieBtn.addEventListener('click', e => {
+            e.preventDefault();
+            fileInput.click(); // fileInput is guaranteed to exist
+        });
+    } else {
+        // console.warn("Lottie Editor: replaceLottieBtn element not found in HTML.");
+    }
+    
+    // Listener for the file input itself (guaranteed to exist)
+    fileInput.addEventListener('change', handleFileSelect);
+
+
+    function resetForNewLottie() {
+        if (lottiePlayer) {
+            lottiePlayer.destroy();
+            lottiePlayer = null;
+        }
+        if (lottiePreview) lottiePreview.innerHTML = '';
+        if (colorGrid) colorGrid.innerHTML = '<div class="no-colors-found">Loading colors...</div>';
+        lottieData = null;
+        totalFramesForSlider = 0;
+        animationFrameCount = 0;
+        zoomFactor = 1;
+        
+        if (frameSlider) {
+            frameSlider.value = 0;
+            frameSlider.max = 0;
+        }
+        if (framesInfo) framesInfo.textContent = `# 0 / 0`;
+        if (zoomLabel) zoomLabel.textContent = `${Math.round(zoomFactor * 100)}%`;
+        updateZoom();
+    }
+
+    function loadFile(file) {
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            alert('Please select a valid Lottie (.json) file.');
+            return;
+        }
+        resetForNewLottie();
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                lottieData = JSON.parse(reader.result);
+                initLottie(lottieData);
+                const colorMap = findLottieColors(lottieData);
+                buildColorUI(colorMap);
+                activateEditorState();
+                incrementServerCounter();
+            } catch (err) {
+                console.error('Lottie Editor: Invalid JSON or Lottie error:', err);
+                alert('Error parsing Lottie JSON or initializing animation.');
+                initializeEditorState();
+                return;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function initLottie(json) {
+        if(lottiePreview) lottiePreview.innerHTML = '';
+        lottiePlayer = lottie.loadAnimation({
+            container: lottiePreview,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            animationData: json
+        });
+        isPlaying = true;
+        if(playBtn) playBtn.textContent = '⏸️';
+
+        lottiePlayer.addEventListener('DOMLoaded', () => {
+            animationFrameCount = Math.floor(lottiePlayer.totalFrames);
+            totalFramesForSlider = Math.max(0, animationFrameCount - 1);
+            if(frameSlider) {
+                frameSlider.max = totalFramesForSlider;
+                frameSlider.value = 0;
+            }
+            if(framesInfo) framesInfo.textContent = `# 0 / ${animationFrameCount}`;
+            if(speedSelect && lottiePlayer) lottiePlayer.setSpeed(parseFloat(speedSelect.value));
+        });
+
+        lottiePlayer.addEventListener('enterFrame', e => {
+            const cf = Math.floor(e.currentTime);
+            if(framesInfo) framesInfo.textContent = `# ${cf} / ${animationFrameCount}`;
+            if (frameSlider && !frameSlider.dragging) {
+                frameSlider.value = cf;
+            }
+        });
+        updateZoom();
+    }
+
+    if(playBtn) {
+        playBtn.addEventListener('click', () => {
+            if (!lottiePlayer) return;
+            if (isPlaying) {
+                lottiePlayer.pause();
+                isPlaying = false;
+                playBtn.textContent = '▶️';
+            } else {
+                lottiePlayer.play();
+                isPlaying = true;
+                playBtn.textContent = '⏸️';
+            }
+        });
+    }
+    if(frameSlider) {
+        frameSlider.addEventListener('mousedown', () => { if(lottiePlayer) frameSlider.dragging = true; });
+        frameSlider.addEventListener('mouseup', () => {
+            if(!lottiePlayer) return;
+            frameSlider.dragging = false;
+            const val = parseInt(frameSlider.value, 10);
+            lottiePlayer.goToAndStop(val, true);
+            if (!isPlaying) lottiePlayer.pause();
+        });
+        frameSlider.addEventListener('input', () => {
+            if(!lottiePlayer) return;
+            if(framesInfo) framesInfo.textContent = `# ${frameSlider.value} / ${animationFrameCount}`;
+            if (frameSlider.dragging) {
+                 lottiePlayer.goToAndStop(parseInt(frameSlider.value, 10), true);
+                 if (!isPlaying) lottiePlayer.pause();
+            }
+        });
+    }
+    if(speedSelect) {
+        speedSelect.addEventListener('change', () => {
+            if (lottiePlayer) {
+                lottiePlayer.setSpeed(parseFloat(speedSelect.value));
+            }
+        });
+    }
+    if(fullBtn && lottieContainer) {
+        fullBtn.addEventListener('click', () => {
+            if (!lottiePlayer) return;
+            if (lottieContainer.requestFullscreen) {
+                lottieContainer.requestFullscreen();
+            } else if (lottieContainer.mozRequestFullScreen) {
+                lottieContainer.mozRequestFullScreen();
+            } else if (lottieContainer.webkitRequestFullscreen) {
+                lottieContainer.webkitRequestFullscreen();
+            } else if (lottieContainer.msRequestFullscreen) {
+                lottieContainer.msRequestFullscreen();
+            }
+        });
+    }
+    if(zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+            if (!lottiePlayer) return;
+            zoomFactor = Math.max(0.1, zoomFactor - 0.1);
+            updateZoom();
+        });
+    }
+    if(zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            if (!lottiePlayer) return;
+            zoomFactor = Math.min(5, zoomFactor + 0.1);
+            updateZoom();
+        });
+    }
+    function updateZoom() {
+        if (lottiePreview) {
+            lottiePreview.style.transform = `translate(-50%, -50%) scale(${zoomFactor.toFixed(2)})`;
+        }
+        if (zoomLabel) zoomLabel.textContent = `${Math.round(zoomFactor * 100)}%`;
+    }
+
+    function findLottieColors(obj, map = {}) {
+        if (!obj || typeof obj !== 'object') return map;
+        if ((obj.ty === 'fl' || obj.ty === 'st') && obj.c && Array.isArray(obj.c.k) && obj.c.k.length >= 3 && typeof obj.c.k[0] === 'number') {
+            const arr = obj.c.k;
+            const hx = rgbToHex(
+                Math.round(arr[0] * 255),
+                Math.round(arr[1] * 255),
+                Math.round(arr[2] * 255)
+            );
+            if (!map[hx]) map[hx] = [];
+            map[hx].push(obj.c.k); 
+        }
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                findLottieColors(obj[i], map);
+            }
+        } else {
+            for (let k in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                    findLottieColors(obj[k], map);
+                }
+            }
+        }
+        return map;
+    }
+
+    function buildColorUI(colorMap) {
+        if(!colorGrid) return;
+        colorGrid.innerHTML = ''; 
+        const keys = Object.keys(colorMap);
+        if (!keys.length) {
+            colorGrid.innerHTML = '<div class="no-colors-found">No editable fill/stroke colors found.</div>';
+            return;
+        }
+        
+        if (keys.length > 8 && window.innerWidth > 768) { 
+             colorGrid.style.gridTemplateColumns = 'repeat(2, minmax(0,1fr))';
+        } else {
+             colorGrid.style.gridTemplateColumns = 'repeat(1, minmax(0,1fr))';
+        }
+
+        keys.forEach(hex => {
+            const row = document.createElement('div');
+            row.className = 'color-row';
+            row.lottieRefs = colorMap[hex];
+
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = hex;
+
+            const label = document.createElement('span');
+            label.className = 'color-hex-label';
+            label.textContent = hex.toUpperCase();
+
+            const colorPicker = document.createElement('input');
+            colorPicker.type = 'color';
+            colorPicker.className = 'color-picker-input';
+            colorPicker.value = formatHexForPicker(hex);
+
+            colorPicker.addEventListener('input', e => {
+                const newHex = e.target.value.toUpperCase();
+                swatch.style.backgroundColor = newHex;
+                label.textContent = newHex;
+                updateColorRefs(row.lottieRefs, newHex);
+                reinitAtCurrentFrame(); 
+            });
+
+            [swatch, label].forEach(el => {
+                el.addEventListener('click', () => colorPicker.click());
+            });
+
+            row.appendChild(swatch);
+            row.appendChild(label);
+            row.appendChild(colorPicker);
+            colorGrid.appendChild(row);
+        });
+    }
+
+    function updateColorRefs(refs, newHex) {
+        const rgb = hexToRgb(newHex);
+        if (!rgb) return;
+        refs.forEach(arr => { 
+            arr[0] = rgb.r / 255;
+            arr[1] = rgb.g / 255;
+            arr[2] = rgb.b / 255;
+        });
+    }
+
+    function reinitAtCurrentFrame() {
+        if (!lottiePlayer || !lottieData) return;
+        const currentFrame = lottiePlayer.currentFrame;
+        const currentSpeed = lottiePlayer.playSpeed;
+        
+        lottiePlayer.destroy(); 
+
+        lottiePlayer = lottie.loadAnimation({
+            container: lottiePreview,
+            renderer: 'svg',
+            loop: true, 
+            autoplay: isPlaying, 
+            animationData: lottieData 
+        });
+        
+        lottiePlayer.addEventListener('DOMLoaded', () => {
+            lottiePlayer.setSpeed(currentSpeed);
+            lottiePlayer.goToAndStop(currentFrame, true); 
+             if (isPlaying) {
+                lottiePlayer.play(); 
+            }
+        });
+         lottiePlayer.addEventListener('enterFrame', e => { 
+            const cf = Math.floor(e.currentTime);
+            if(framesInfo) framesInfo.textContent = `# ${cf} / ${animationFrameCount}`;
+            if (frameSlider && !frameSlider.dragging) {
+                frameSlider.value = cf;
+            }
+        });
+    }
+
+    if(downloadJsonBtn) {
+        downloadJsonBtn.addEventListener('click', () => {
+            if (!lottieData) return;
+            const str = JSON.stringify(lottieData, null, 2);
+            const blob = new Blob([str], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'updated-lottie.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if(exportMp4Btn) exportMp4Btn.addEventListener('click', () => doExport('webm'));
+    if(exportGifBtn) exportGifBtn.addEventListener('click', () => doExport('gif'));
+    if(exportGifTransBtn) exportGifTransBtn.addEventListener('click', () => doExport('gif-trans'));
+
+    function doExport(fmt) {
+        if (!lottiePlayer) {
+            alert('No Lottie loaded to export.');
+            return;
+        }
+        if(exportProgressBar) exportProgressBar.style.display = 'block';
+        if(exportProgressFill) exportProgressFill.style.width = '0%';
+
+        const wasPlaying = isPlaying; 
+        if (isPlaying) {
+            lottiePlayer.pause();
+            if(playBtn) playBtn.textContent = '▶️'; 
+        }
+        
+        const originalBg = lottieContainer ? lottieContainer.style.background : 'white';
+        const originalBgImg = lottieContainer ? lottieContainer.style.backgroundImage : 'none';
+        let tempBgForExport = 'white'; 
+
+        if (fmt === 'gif-trans') {
+            if(lottieContainer) {
+                lottieContainer.style.background = 'transparent';
+                lottieContainer.style.backgroundImage = 'none';
+            }
+        } else if (lottieContainer && lottieContainer.style.backgroundImage.includes('linear-gradient')) { 
+            lottieContainer.style.background = tempBgForExport; 
+            lottieContainer.style.backgroundImage = 'none';
+        }
+
+        let ccOpts;
+        const exportFramerate = Math.min(30, lottiePlayer.frameRate > 0 ? lottiePlayer.frameRate : 30); 
+        if (fmt === 'gif' || fmt === 'gif-trans') {
+            ccOpts = { format: 'gif', workersPath: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/', framerate: exportFramerate, quality: 10, verbose: false };
+        } else { 
+            ccOpts = { format: 'webm', framerate: exportFramerate, quality: 0.9, verbose: false }; 
+        }
+        const capturer = new CCapture(ccOpts);
+        
+        capturer.start();
+
+        const framesToCapture = animationFrameCount; 
+        let currentFrameCapture = 0;
+
+        function captureFrame() {
+            if (currentFrameCapture >= framesToCapture) {
+                finishExport();
+                return;
+            }
+            lottiePlayer.goToAndStop(currentFrameCapture, true);
+            requestAnimationFrame(() => {
+                const canvasElement = lottieContainer ? lottieContainer.querySelector('svg') : null; 
+                if (canvasElement) {
+                     capturer.capture(canvasElement);
+                } else if (lottieContainer) {
+                    capturer.capture(lottieContainer); 
+                } else { 
+                    console.error("Lottie Editor: Cannot find element to capture for export.");
+                    finishExport(); 
+                    return;
+                }
+                currentFrameCapture++;
+                if(exportProgressFill) exportProgressFill.style.width = (currentFrameCapture / framesToCapture) * 100 + '%';
+                
+                let delay = 1000 / exportFramerate;
+                setTimeout(captureFrame, delay); 
+            });
+        }
+
+        function finishExport() {
+            capturer.stop();
+            capturer.save();
+            
+            if(lottieContainer) {
+                lottieContainer.style.background = originalBg;
+                lottieContainer.style.backgroundImage = originalBgImg;
+            }
+
+            setTimeout(() => {
+                if(exportProgressBar) exportProgressBar.style.display = 'none';
+            }, 1500);
+
+            if (wasPlaying) { 
+                lottiePlayer.play();
+                if(playBtn) playBtn.textContent = '⏸️';
+            } else { 
+                 lottiePlayer.goToAndStop(frameSlider ? parseInt(frameSlider.value, 10) : 0, true); 
+                 lottiePlayer.pause(); 
+            }
+        }
+        captureFrame(); 
+    }
+
+
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+            const h = x.toString(16);
+            return (h.length === 1 ? '0' + h : h);
+        }).join('');
+    }
+    function hexToRgb(hex) {
+        hex = hex.replace(/^#/, '');
+        if (hex.length === 3) {
+            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+        if (hex.length !== 6) return null;
+        const num = parseInt(hex, 16);
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+    function formatHexForPicker(hex){
+        let h = hex.trim().toLowerCase();
+        if(!h.startsWith('#')) h = '#'+h;
+        if(h.length===4){ 
+            h = '#'+ h[1]+h[1] + h[2]+h[2] + h[3]+h[3];
+        }
+        return h;
+    }
+
+    function refreshServerCount() {
+        // Placeholder for WordPress AJAX to get count if needed on load
+        // For now, it assumes the count is directly embedded by a shortcode or similar.
+    }
+    function incrementServerCounter() {
+        if (typeof lotties_preview_count_url !== 'undefined' && typeof lotties_preview_count_nonce !== 'undefined') {
+            const formData = new FormData();
+            formData.append('action', 'increment_lotties_preview_count'); 
+            formData.append('security', lotties_preview_count_nonce); 
+
+            fetch(lotties_preview_count_url, { 
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && serverPreviewCounter) {
+                    serverPreviewCounter.textContent = data.data; 
+                } else {
+                    // console.error('Lottie Editor: Failed to increment server count:', data.data || 'No error message from server.');
+                }
+            })
+            .catch(err => console.error('Lottie Editor: Error incrementing server count:', err));
+        }
+    }
+    
+    initializeEditorState();
+});
+</script>
